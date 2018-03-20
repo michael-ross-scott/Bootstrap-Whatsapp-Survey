@@ -1,0 +1,330 @@
+---
+title: "Bootstrap Project 1"
+author: "Michael Scott - SCTMIC012"
+date: "06 March 2018"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+
+## the echo = FALSE says that the code will not appear in the document, only the output
+## it is important that you write and explain what you are doing, i.e. demonstrate that you understand what you are doing
+## just showing code will count against you, because it is easy to copy code
+```
+
+## Introduction
+
+Social media and the internet has become a big part of student and adult life. The objective of this report is to investigate, on average, how much it plays a role in student's lives as compared to the average person. To test this a hypothesis must be formed. Textrequest estimated that in 2016 people received on average "80 texts" per day, this will form the basis of our hypothesis.
+
+In order to test this hypothesis data must be collected and analysed in order to determine the appropriate test(s) to be conducted. After which conclusions can be drawn
+
+## Data Collection
+
+Data was collected by interviewing 20 UCT students at random and asking them to estimate how many messages they received yesterday. The results of which are shown below.
+
+### Ordinal Sample Data
+
+```{r, fig.cap="Sample Data"}
+
+## Read into vector
+sampleW <- c(60,20,67,50,95,100,35,150,200,35,80,75,30,250,25,12,5,10,120,400)
+n <- length(sampleW)
+
+## Sort sample
+sortedSamp <- sort(sampleW)
+
+## Put sample in a 1 row table
+table <- list(t(sortedSamp[1:20]))
+
+## Display table
+(dataframe<-data.frame(table))
+```
+
+## Exploratory Data Analysis 
+
+In this section data that was collected is explored in greater detail using exploratory data analysis. The types of exploratory data analysis used were a histogram of the data, which shows the distribution of that sample data,and a boxplot, which shows the summary statistics associated with the sample.
+
+These aforementioned figures are shown below.
+
+### Graphical Analysis
+
+```{r, fig.width=10, fig.height=4, fig.align='center',fig.cap="Visual data"}
+### maybe a chunk with exploratory data analysis
+par(mfrow = c(1, 2))   ## split plotting window into 1x2 matrix
+hist(sampleW,main="Histogram of number of messages received")
+boxplot(sampleW,main="Boxplot of number of messages received")
+```
+
+<!-- TO-DO: Summary Stats !-->
+### Explanation
+
+The histogram shows us that the sample of Whatsapp messages received by students the day before is not at all normally distributed and the data is skewed to the right (majority of the data falls into the 0 to 100 bins). The boxplot by extension shows us that the data has various outliers.
+
+These observations will be revisited later in the next section.
+
+## Hypothesis Tests 
+
+<!--Give details of bootstrapping, statistic, parameter you are interested in, how many bootstrap samples you are generating. Always give enough detail so that somebody could repeat what you have done exactly, i.e. they need to know exactly which kind of confidence interval you have calculated, B, etc.
+
+You can use dollar signs for equations, e.g. 
+
+$$ \hat{\theta} = \frac{\frac{1}{n} \sum_{i = 1}^n (X_i - \bar{X})^3}{\hat{\sigma}^3} $$ 
+
+This is LaTeX code, and will create beautiful equations. !-->
+
+As explained in the introduction, the hypothesis tested is that students receive less than or the equivalent of 80 messages yesterday (H0). This is formalized below.
+
+  H0: u < = 80
+  HA: u  >  80
+  
+The hypothesis will be tested using the t-test and the bootstrap test.
+  
+### t-test
+
+This is a popular type of hypothesis testing used when testing a single variable hypothesis. The equation used to test the null hypothesis is as follows:
+
+  t n-1 = x-u / (s/sqrt(n)) <!--Replace with latex code on another computer !-->
+  
+  Where:
+    x = sample mean
+    s = sample standard deviation
+    n-1 = degrees of freedom
+  
+The p-value is then calculated using the degrees of freedom and the value calculated above. The p-value is then used to as evidence to make a conclusion on our hypothesis. Generally the lower the p-value, the more conclusively we can reject the null hypothesis.
+
+An alternative to the p-value is a confidence interval which makes inferences on the percentage the true population parameter lies in the interval given sampling is repeated a large number of times.
+
+The confidence interval formula for a 95% confidence interval is:
+
+  0.95 = P[x - tn-1,theta * s/sqrt(n) <= u <= x - tn-1,theta * s/sqrt(n)] <!-- Replace !-->
+  
+The standard error (which is the statistical accuracy of an estimate) is calculated as:
+
+  SE = sqrt( E (xi-u) / n)
+  
+  Where:
+    E = summation of i to n
+    xi = sample of value at position i
+    u = population mean
+    n = number of values
+
+The assumptions of this test are as follows:
+
+  (1) The data was randomly sampled and independent.
+  (2) The sample data's distribution is normal.
+
+```{r, fig.cap="t-test"}
+
+x_bar <- mean(sampleW)
+sDev <- sd(sampleW)
+IntQ <- IQR(sampleW)
+
+## Hypothesised mean = 80
+
+## Formula to work out t-stat
+tobs <- (x_bar - 80)/(sDev/sqrt(n))
+
+# Formual to worj out standard error
+SE_t <- sd(sampleW)
+
+## p value, pt works out cumulative p-value therefore take that away from 1 to get p-value
+p_valT <- 1 - pt(tobs,df=n-1)
+
+## Confidence interval
+LowerLimT <- x_bar + qt(0.025, df = n-1) * sDev / sqrt(n)
+UpperLimT <- x_bar + qt(0.975, df = n-1) * sDev / sqrt(n)
+
+```
+  
+#### Calculations
+
+The result is:
+
+  t `r n-1` = `r tobs` <!--Replace !-->
+  
+The associated p-value is therefore:
+
+  p-val = `r p_valT` <!--Replace !-->
+
+The confidence interval of the population mean is therefore:
+
+  0.95 = [`r LowerLimT` <= u <= `r UpperLimT`] <!--Replace !-->
+  
+The standard error is:
+
+  SE = `r SE_t` <!--Replace !-->
+
+#### Conclusion
+
+There is weak evidence to suggest that the null hypothesis is correct (p-val of `r p_valT` and confidence interval [`r LowerLimT`;`r UpperLimT`]), due to the results we have obtained with our t-test.
+
+However, assumption (1) of the t-test does not hold (as outlined in exploratory data analysis section), therefore the t-test is inappropriate to test the hypothesis.
+
+### Bootstrap Test
+
+A better hypothesis testing strategy is the bootstrap test. This involves the  random and repeated sampling of the sample data we have already obtained, in order to draw inferences on the population mean. The underlying principle this is based on is called the bootstrap principle, which says that the behaviour of the bootstrapped statistics around the sample parameter can allow insight about the sample statistic around the population parameter.
+
+The bootstrap test has only 1 assumption, which is:
+
+  (1) The data was randomly sampled and independent
+  
+This means that the bootstrap test is perfect to use in order to test the hypothesis.
+
+In our case the bootstrap test is performed by taking 20 values at random from the sample and calculating the mean for the values taken. This was repeated 1000 times in order to conduct this test.
+
+The above procedure is equivalent to repeatedly resampling from the population, if the above sample is an accurate representation of the population (which it should be, because of assumption 1). Therefore assumptions can be made on the population parameters (which in our case is the mean).
+
+The equation used to calculate the bootstrap p-value is as follows:
+
+  P = P[Ti* > 2*x - 80] <!--Replace !-->
+  
+  Where:
+    Ti* = Bootstrapped sample means
+    x = sample mean
+  
+The confidence interval equation for the population mean is as follows (at 95%):
+  
+  0.95 = P[2*x - c2 <= u <= 2*x - c1] <!--Replace !-->
+  
+  Where:
+    x = sample mean
+    u = population mean
+    c1 = upper 97.5% quartile
+    c2 = lower 2.5% quartile
+  
+The confidence interval equation for the population Inter-Quartile Range is below (at 95%):
+
+  0.95 = P[2*iqr - c2 <= IQR <= 2*iqr - c1]
+  
+  Where:
+    iqr = sample inter-quartile range
+    IQR = population inter-quartile range
+    c1 = upper 97.5% quartile
+    c2 = lower 2.5% quartile
+And finally the standard error equation is:
+
+  SE(x) = sqrt(E Ti*- Ti_bar*/B-1) <!--Replace !-->
+  
+  Where:
+    B = 1000
+    Ti* = bootstrapped sample means
+    Ti_bar* = bootstrapped mean of sample means
+    
+The confidence interval, standard error and the p-value hold the same meaning in the bootstrap test as they did in the t-test. 
+
+```{r, fig.cap="Bootstrap Method"}
+B <- 1000
+boot_means <- numeric(B)
+boot_IQR <- numeric(B)
+
+for (i in 1:B) {
+  ## Sampling with replacement
+  bootSamp <- sample(sampleW, size=n, replace=TRUE)
+  
+  ## Mean calculation for that sample
+  boot_means[i] <- mean(bootSamp)
+  
+  ## IQR calculation for that sample
+  boot_IQR[i] <- IQR(bootSamp)
+}
+
+```
+
+#### Exploratory Data Analysis
+
+The bootstrapped data is explored in more detail. This is to provide an idea about what the data looks like, before any assumption is tested or any statistic calculated
+
+```{r, fig.width=10, fig.height=4, fig.align='center',fig.cap="Visual data"}
+### maybe a chunk with exploratory data analysis
+par(mfrow = c(1, 2))   ## split plotting window into 1x2 matrix
+hist(boot_means,main="Histogram of bootstrapped mean of messages received")
+boxplot(boot_means,main="Boxplot of bootstrapped mean of messages received")
+```
+
+As seen in the histogram above the distribution of the mean appears to be more normal and the box plot appears to be more evenly dispersed than those of the previous box plot and histograms. This is due to the histogram and box plot representing bootstrapped sample mean, rather than just purely samples.
+
+The box plot does still seem to have the problem of outliers that the previous boxplot did.
+
+#### Calculations:
+
+```{r, fig.cap="Bootstrap Calculations"}
+
+## P-val for bootstatistics
+p_valB <- sum(boot_means > 2 * x_bar - 80) / B
+
+## Confidence interval for bootstatistics 
+quants <- quantile(boot_means, probs = c(0.025, 0.975))
+LowerLimB <- 2 * x_bar - quants[2]
+UpperLimB <- 2 * x_bar - quants[1]
+
+## Inter-Quartile Range Confidnce Interval
+quants1 <- quantile(boot_IQR, probs = c(0.025, 0.975))
+LowerQuartB <- 2 * IntQ - quants1[2]
+UpperQuartB <- 2 * IntQ - quants1[1]
+
+
+## Standard error for bootstatistics
+B_SE <- sd(boot_means)
+B_SE_IQR <- sd(boot_IQR)
+
+```
+
+The p-value for the test is:
+
+  p-val = `r p_valB`
+  
+The confidence interval for the population mean is:
+
+  0.95 = P[`r LowerLimB` <= u <= `r UpperLimB`] <!--Replace !-->
+  
+The confidence interval for the population inter-quartile range is:
+
+  0.95 = P[`r LowerQuartB` <= IQR <= `r UpperQuartB`]
+  
+The standard error of the bootstrap mean estimate is:
+
+  SE = `r B_SE` <!--Replace !-->
+  
+And the standard error of the bootstrap interquartile range estimate is:
+
+  SE = `r B_SE_IQR`
+  
+#### Conclusion
+
+There is weak evidence to reject the null hypothesis (p-value: `r p_valB` and confidence interval [`r LowerLimB`;`r UpperLimB`]), due to the results we obtained in the bootstrap test.
+
+This is the same conclusion reached in the t-test, but the result is much more accurate than that of the t-test, because the assumptions of the bootstrap test hold.
+
+<!--TO-DO!-->
+
+## Conclusions 
+
+As shown in the above "Hypothesis Test" section, the evidence to back up rejecting the null hypothesis in both the t-test and the bootstrap test was insufficient. Although both the t-test and bootstrap tests lead to the same result being reached, the p-values obtained were different (at least a `r p_valB - p_valT` difference). Similarly the confidence intervals for the bootstrap were narrower than that of the t-test. As discussed in the previous section, the more appropriate test to use would be the Bootstrap test due to the fact that all of its assumptions were satisfied (making the result more accurate). This would make the bootstraps p-value and confidence interval 'more correct' in the use of drawing inferences about the population.
+
+This simple fact is backed up by the difference between the standard error generated by the t-test (`r SE_t`) and the one generated by the bootstrap test (`r B_SE`). The lower standard error generated by the bootstrap test implies that the sample parameters calculated where close to the population parameters (which in this case was the mean).
+
+Therefore from our results there is fairly weak evidence to suggest that Whatsapp plays a significantly bigger part in students lives than that of average people or in other words there is poor evidence to conclude that UCT students exceed the mean amount of messages received (80) per day. 
+
+## References
+
+``` {r}
+
+## Citations
+ref <- citation(package="base")
+ref2 <- citation(package="knitr")
+
+```
+R Core Team (2017). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. URL https://www.R-project.org/.
+
+Yihui Xie (2014) knitr: A Comprehensive Tool for Reproducible Research in R. In Victoria Stodden,
+Friedrich Leisch and Roger D. Peng, editors, Implementing Reproducible Computational Research.
+Chapman and Hall/CRC. ISBN 978-1466561595
+
+## Plagiarism Declaration
+
+I, Michael Scott, declare that this is my own work and any work not completed by myself has been referenced
+
